@@ -3,6 +3,7 @@ using GMap.NET.MapProviders;
 using GMap.NET.WindowsForms;
 using GMap.NET.WindowsForms.Markers;
 using GMap.NET.WindowsForms.ToolTips;
+using Npgsql;
 
 namespace Maps
 {
@@ -16,6 +17,8 @@ namespace Maps
         GMapOverlay listOfHospitals = new GMapOverlay();
         GMapOverlay listOfParks = new GMapOverlay();
         GMapOverlay listOfMcDonalds = new GMapOverlay();
+
+        DBController dBController;
 
         public Form1()
         {
@@ -107,6 +110,22 @@ namespace Maps
                     }
                 }
             }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            dBController = new DBController("postgres", "mapsdiploma", "admin");
+
+            dBController.openConnection();
+
+            NpgsqlDataReader? reader = dBController.basicSelect("searchhistory");
+            if(reader != null)
+            while (reader.Read())
+            {
+                MessageBox.Show($"{reader[0]} {reader[1]} {reader[2]}");
+            }else MessageBox.Show($"Nothing to read!");
+
+            dBController.closeConnection();
         }
     }
 }
