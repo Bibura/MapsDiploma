@@ -52,22 +52,78 @@ namespace Maps
             }
         }
 
-        public NpgsqlDataReader? basicSelect(string table)
+        public List<string>? basicSelect(string table)
         {
             try
             {
-                string select = $"select * from {table}";
+                string select = $"select id from {table}";
+
+                List<string> result = new List<string>();
 
                 NpgsqlCommand cmd = new NpgsqlCommand(select, con);
 
                 NpgsqlDataReader reader = cmd.ExecuteReader();
 
-                return reader;
+                int i = 0;
+
+                while (reader.Read())
+                {
+                    result.Add(reader[0].ToString());
+                    i++;
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
                 return null;
+            }
+        }
+
+        public List<string>? searchSelect(string table)
+        {
+            try
+            {
+                string select = $"select search from {table}";
+
+                List<string> result = new List<string>();
+
+                NpgsqlCommand cmd = new NpgsqlCommand(select, con);
+
+                NpgsqlDataReader reader = cmd.ExecuteReader();
+
+                int i = 0;
+
+                while (reader.Read())
+                {
+                    result.Add(reader[0].ToString());
+                    i++;
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return null;
+            }
+        }
+
+
+        public void basicInsertIntoSearchTable(string table, List<string> values)
+        {
+            try
+            {
+                string insert = $"insert into {table} values ({values[0]},{values[1]},{values[2]})";
+
+                NpgsqlCommand cmd = new NpgsqlCommand(insert, con);
+
+                NpgsqlDataReader reader = cmd.ExecuteReader();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
             }
         }
 

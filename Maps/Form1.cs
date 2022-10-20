@@ -24,6 +24,13 @@ namespace Maps
         {
             InitializeComponent();
             StartPosition = FormStartPosition.CenterScreen;
+            dBController = new DBController("postgres", "mapsdiploma", "admin");
+            dBController.openConnection();
+            List<string> searchHistory = dBController.searchSelect("searchhistory");
+            if (searchHistory != null)
+                foreach (string item in searchHistory)
+                    comboBox1.Items.Add(item);
+            dBController.closeConnection();
         }
 
         private void gMapControl1_Load(object sender, EventArgs e)
@@ -109,23 +116,53 @@ namespace Maps
                         break;
                     }
                 }
+
+                dBController = new DBController("postgres", "mapsdiploma", "admin");
+                dBController.openConnection();
+
+                int count = dBController.basicSelect("searchhistory").Count;
+
+                dBController.closeConnection();
+
+                dBController.openConnection();
+
+                int id = Convert.ToInt32(dBController.basicSelect("searchhistory")[count - 1]) + 1;
+
+                dBController.closeConnection();
+
+                dBController.openConnection();
+
+                string date = @"'" + DateTime.Now.ToString("dd/MM/yyyy") + @"'";
+
+                List<string> values = new List<string>{ id.ToString(),
+                    @"'" + comboBox1.Text + @"'", date };
+                dBController.basicInsertIntoSearchTable("searchhistory", values);
+                dBController.closeConnection();
+                comboBox1.Items.Clear();
+
+                dBController.openConnection();
+
+                List<string> searchHistory = dBController.searchSelect("searchhistory");
+
+                if (searchHistory != null)
+                    foreach (string item in searchHistory)
+                        comboBox1.Items.Add(item);
+
+                dBController.closeConnection();
             }
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            dBController = new DBController("postgres", "mapsdiploma", "admin");
 
-            dBController.openConnection();
 
-            NpgsqlDataReader? reader = dBController.basicSelect("searchhistory");
-            if(reader != null)
-            while (reader.Read())
-            {
-                MessageBox.Show($"{reader[0]} {reader[1]} {reader[2]}");
-            }else MessageBox.Show($"Nothing to read!");
+            //NpgsqlDataReader? reader = dBController.basicSelect("searchhistory");
+            //if(reader != null)
+            //while (reader.Read())
+            //{
+            //    MessageBox.Show($"{reader[0]} {reader[1]} {reader[2]}");
+            //}else MessageBox.Show($"Nothing to read!");
 
-            dBController.closeConnection();
         }
     }
 }
