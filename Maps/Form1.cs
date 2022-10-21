@@ -19,6 +19,7 @@ namespace Maps
         GMapOverlay listOfMcDonalds = new GMapOverlay();
 
         DBController dBController;
+        List<string> searchHistory;
 
         public Form1()
         {
@@ -26,7 +27,7 @@ namespace Maps
             StartPosition = FormStartPosition.CenterScreen;
             dBController = new DBController("postgres", "mapsdiploma", "admin");
             dBController.openConnection();
-            List<string> searchHistory = dBController.searchSelect("searchhistory");
+            searchHistory = dBController.searchSelect("searchhistory");
             if (searchHistory != null)
                 foreach (string item in searchHistory)
                     comboBox1.Items.Add(item);
@@ -95,9 +96,8 @@ namespace Maps
             }
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void find_on_map_click(object sender, EventArgs e)
         {
-
             if (comboBox1.Text != "")
             {
                 gMapControl1.SetPositionByKeywords(comboBox1.Text);
@@ -142,7 +142,9 @@ namespace Maps
 
                 dBController.openConnection();
 
-                List<string> searchHistory = dBController.searchSelect("searchhistory");
+                searchHistory.Clear();
+
+                searchHistory = dBController.searchSelect("searchhistory");
 
                 if (searchHistory != null)
                     foreach (string item in searchHistory)
@@ -154,8 +156,6 @@ namespace Maps
 
         private void button2_Click(object sender, EventArgs e)
         {
-
-
             //NpgsqlDataReader? reader = dBController.basicSelect("searchhistory");
             //if(reader != null)
             //while (reader.Read())
@@ -164,5 +164,6 @@ namespace Maps
             //}else MessageBox.Show($"Nothing to read!");
 
         }
+
     }
 }
