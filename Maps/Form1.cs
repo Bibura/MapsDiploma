@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Text.Json;
+using static System.Windows.Forms.AxHost;
 
 namespace Maps
 {
@@ -207,24 +208,50 @@ namespace Maps
             MessageBox.Show(String.Format("Marker was clicked."));
         }
 
-         
+
 
 
         private void button3_Click(object sender, EventArgs e)
         {
+            foreach (GMapOverlay a in gMapControl1.Overlays)
+            {
+                if (a.Id.Equals("Routes"))
+                {
+                    a.Clear();
+                }
+            }
+
             gMapControl1.SetPositionByKeywords(comboBox1.Text);
             PointLatLng startPoint = new PointLatLng(gMapControl1.Position.Lat, gMapControl1.Position.Lng);
             gMapControl1.SetPositionByKeywords(textBox1.Text);
             PointLatLng endPoint = new PointLatLng(gMapControl1.Position.Lat, gMapControl1.Position.Lng);
+            List<PointLatLng> points = new List<PointLatLng>();
 
-            var route = OpenStreetMapProvider.Instance.GetRoute(startPoint, endPoint, false, false, 14);
+            MapRoute route = OpenStreetMapProvider.Instance.GetRoute(startPoint, endPoint, false, false, 14);
+            MapRoute tmpRoute;
+                GMapOverlay routes = new GMapOverlay("Routes");
 
-            var r = new GMapRoute(route.Points, "My route");
+            for (int i = 0; i < route.Points.Count; i++)
+            {
+                if (i < route.Points.Count - 1)
+                {
+                    startPoint = route.Points[i];
+                    endPoint = route.Points[i + 1];
+                }
+                tmpRoute = OpenStreetMapProvider.Instance.GetRoute(startPoint, endPoint, false, false, 14);
 
-            var routes = new GMapOverlay("Routes");
+                foreach(PointLatLng tmp in tmpRoute.Points)
+                {
+                    points.Add(tmp);
+                }
+                
+            }
 
-            routes.Routes.Add(r);
-            gMapControl1.Overlays.Add(routes);
+                GMapRoute r = new GMapRoute(points, "My route");
+                r.Stroke.Color = Color.RebeccaPurple;
+
+                routes.Routes.Add(r);
+                gMapControl1.Overlays.Add(routes);
 
         }
     }
