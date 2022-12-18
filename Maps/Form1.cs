@@ -3,6 +3,9 @@ using GMap.NET.MapProviders;
 using GMap.NET.WindowsForms;
 using GMap.NET.WindowsForms.Markers;
 using GMap.NET.WindowsForms.ToolTips;
+using Itinero;
+using Itinero.IO.Osm;
+using Itinero.Osm.Vehicles;
 using Npgsql;
 using System.Collections;
 using System.Collections.Generic;
@@ -38,19 +41,6 @@ namespace Maps
                 foreach (string item in searchHistory)
                     comboBox1.Items.Add(item);
             dBController.closeConnection();
-            dtRouter.Columns.Add("Шаг");
-            dtRouter.Columns.Add("Нач. точка (latitude)");
-            dtRouter.Columns.Add("Нач. точка (longitude)");
-            dtRouter.Columns.Add("Кон. точка (latitude)");
-            dtRouter.Columns.Add("Кон. точка (longitude)");
-            dtRouter.Columns.Add("Время пути");
-            dtRouter.Columns.Add("Расстояние");
-            dtRouter.Columns.Add("Описание маршрута");
-            dataGridView1.DataSource = dtRouter;
-            dataGridView1.Columns[7].Width = 250;
-            dataGridView1.AllowUserToAddRows = false;
-            dataGridView1.AllowUserToDeleteRows = false;
-            dataGridView1.ReadOnly = false;
         }
 
         private void gMapControl1_Load(object sender, EventArgs e)
@@ -181,78 +171,73 @@ namespace Maps
             }
         }
 
-
-        //class Person
-        //{
-        //    public string Name { get; }
-        //    public int Age { get; set; }
-        //    public Person(string name, int age)
-        //    {
-        //        Name = name;
-        //        Age = age;
-        //    }
-        //}
-
-        private void button2_ClickAsync(object sender, EventArgs e)
-        {
-            //using (FileStream fs = new FileStream("user.json", FileMode.OpenOrCreate))
-            //{
-            //    Person tom = new Person("Tom", 37);
-            //    JsonSerializer.SerializeAsync<Person>(fs, tom);
-            //    MessageBox.Show("Data has been saved to file");//ТЕСТОВИЙ ВАРІАНТ ---- ЗРОБИТИ ДОДАВАННЯ А НЕ ПЕРЕПИСУВАННЯ ДЖСОНА
-            //}
-        }
-
         private void gMapControl1_OnMarkerClick(GMapMarker item, MouseEventArgs e)
         {
             MessageBox.Show(String.Format("Marker was clicked."));
         }
 
 
-
+        GMapOverlay routOverlay = new GMapOverlay("AtoB");
 
         private void button3_Click(object sender, EventArgs e)
         {
-            foreach (GMapOverlay a in gMapControl1.Overlays)
+            gMapControl1.Overlays.Add(routOverlay);
+
+            using (var stream = new FileInfo(@"ukraine-latest.routerdb").Open(FileMode.Open))
             {
-                if (a.Id.Equals("Routes"))
+                var routeDB = RouterDb.Deserialize(stream);
+
+                var profile = Vehicle.Car.Fastest();
+                var router = new Router(routeDB);
+
+                gMapControl1.SetPositionByKeywords(comboBox2.Text);
+                PointLatLng endPoint = new PointLatLng(gMapControl1.Position.Lat, gMapControl1.Position.Lng);
+                var latEnd = Convert.ToSingle(endPoint.Lat);
+                var lngEnd = Convert.ToSingle(endPoint.Lng);
+                gMapControl1.SetPositionByKeywords(comboBox1.Text);
+                PointLatLng startPoint = new PointLatLng(gMapControl1.Position.Lat, gMapControl1.Position.Lng);
+                var latStart = Convert.ToSingle(startPoint.Lat);
+                var lngStart = Convert.ToSingle(startPoint.Lng);
+
+                var start = router.Resolve(profile, latStart, lngStart, 100);
+
+                var end = router.Resolve(profile, latEnd, lngEnd, 100);
+
+                var route = router.Calculate(profile, start, end);
+
+                List<PointLatLng> points = new List<PointLatLng>();
+
+                foreach(var item in route.Shape)
                 {
-                    a.Clear();
+                    PointLatLng tmpPoint = new PointLatLng(Convert.ToDouble(item.Latitude), Convert.ToDouble(item.Longitude));
+                    points.Add(tmpPoint);
                 }
+                GMapRoute gMapRoute = new GMapRoute(points, "My route");
+
+                routOverlay.Routes.Clear();
+                routOverlay.Routes.Add(gMapRoute);
+                gMapControl1.Overlays.Add(routOverlay);
+            }
+        }
+
+        private void downloadOfflineMapToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var routerDb = new RouterDb();
+            using(var stream = new FileInfo(@"ukraine-latest.osm.pbf").OpenRead())
+            {
+                routerDb.LoadOsmData(stream, Vehicle.Car);
             }
 
-            gMapControl1.SetPositionByKeywords(comboBox1.Text);
-            PointLatLng startPoint = new PointLatLng(gMapControl1.Position.Lat, gMapControl1.Position.Lng);
-            gMapControl1.SetPositionByKeywords(textBox1.Text);
-            PointLatLng endPoint = new PointLatLng(gMapControl1.Position.Lat, gMapControl1.Position.Lng);
-            List<PointLatLng> points = new List<PointLatLng>();
-
-            MapRoute route = OpenStreetMapProvider.Instance.GetRoute(startPoint, endPoint, false, false, 14);
-            MapRoute tmpRoute;
-                GMapOverlay routes = new GMapOverlay("Routes");
-
-            for (int i = 0; i < route.Points.Count; i++)
+            using(var stream = new FileInfo(@"ukraine-latest.routerdb").Open(FileMode.Create))
             {
-                if (i < route.Points.Count - 1)
-                {
-                    startPoint = route.Points[i];
-                    endPoint = route.Points[i + 1];
-                }
-                tmpRoute = OpenStreetMapProvider.Instance.GetRoute(startPoint, endPoint, false, false, 14);
-
-                foreach(PointLatLng tmp in tmpRoute.Points)
-                {
-                    points.Add(tmp);
-                }
-                
+                routerDb.Serialize(stream);
             }
+        }
 
-                GMapRoute r = new GMapRoute(points, "My route");
-                r.Stroke.Color = Color.RebeccaPurple;
-
-                routes.Routes.Add(r);
-                gMapControl1.Overlays.Add(routes);
-
+        private void button2_Click(object sender, EventArgs e)
+        {
+            gMapControl1.Position = new GMap.NET.PointLatLng(50.43115, 30.657337);
+            
         }
     }
 }
