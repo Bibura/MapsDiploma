@@ -55,6 +55,7 @@ namespace Maps
             {
                 GMap.NET.GMaps.Instance.Mode = GMap.NET.AccessMode.CacheOnly; //downloading mode - online of ofline from package
                 gMapControl1.MapProvider = OpenStreetMapProvider.Instance; //provider choose
+                MessageBox.Show("Attention! You are NOT connected to internet! Some functions may be unavailable!", "", MessageBoxButtons.OK);
             }
             gMapControl1.MinZoom = 2; //min zoom
             gMapControl1.MaxZoom = 32; //max zoom
